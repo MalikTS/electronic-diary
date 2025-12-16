@@ -50,7 +50,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		</div>
 		<div class="home-reset">
 			<form action="/api/reset-dynamic" method="POST" onsubmit="return confirm('Обнулить все баллы, посещаемость и комментарии? Это нельзя отменить!')">
-				<button type="submit" class="reset-btn">Сбросить динамические данные</button>
+				<button type="submit" class="reset-btn">Сбросить данные</button>
 			</form>
 		</div>
 	</div>
@@ -224,9 +224,9 @@ func StudentHandler(w http.ResponseWriter, r *http.Request) {
 		{{$data := index $.DataMap .ID}}
 		<tr data-disc-id="{{.ID.Hex}}">
 			<td>{{.Name}}</td>
-			<td><input type="number" name="score_{{.ID.Hex}}" class="score-input" data-disc="{{.ID.Hex}}" value="{{$data.Score}}" min="0" max="100"></td>
-			<td><input type="number" name="total_{{.ID.Hex}}" class="total-input" data-disc="{{.ID.Hex}}" value="{{$data.TotalClasses}}" min="0"></td>
-			<td><input type="number" name="attended_{{.ID.Hex}}" class="attended-input" data-disc="{{.ID.Hex}}" value="{{$data.AttendedClasses}}" min="0"></td>
+			<td><input type="number" name="score_{{.ID.Hex}}" class="score-input" data-disc="{{.ID.Hex}}" value="{{if ne $data.Score 0}}{{$data.Score}}{{end}}" placeholder="0" min="0" max="100"></td>
+			<td><input type="number" name="total_{{.ID.Hex}}" class="total-input" data-disc="{{.ID.Hex}}" value="{{if ne $data.TotalClasses 0}}{{$data.TotalClasses}}{{end}}" placeholder="0" min="0"></td>
+			<td><input type="number" name="attended_{{.ID.Hex}}" class="attended-input" data-disc="{{.ID.Hex}}" value="{{if ne $data.AttendedClasses 0}}{{$data.AttendedClasses}}{{end}}" placeholder="0" min="0"></td>
 			<td class="perc-cell">
 				{{if gt $data.TotalClasses 0}}
 					{{printf "%.0f" (div (mul $data.AttendedClasses 100) $data.TotalClasses)}}
@@ -437,9 +437,20 @@ func UpdateStudentHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			score, _ := strconv.Atoi(values[0])
-			total, _ := strconv.Atoi(r.FormValue("total_" + discIDHex))
-			attended, _ := strconv.Atoi(r.FormValue("attended_" + discIDHex))
+			// Считываем score
+			scoreStr := values[0]
+				if scoreStr == "" { scoreStr = "0" }
+				score, _ := strconv.Atoi(scoreStr)
+
+			// Считываем total — НЕ из values[0]!
+			totalStr := r.FormValue("total_" + discIDHex)
+				if totalStr == "" { totalStr = "0" }
+				total, _ := strconv.Atoi(totalStr)
+
+			// Считываем attended — НЕ из values[0]!
+			attendedStr := r.FormValue("attended_" + discIDHex)
+				if attendedStr == "" { attendedStr = "0" }
+				attended, _ := strconv.Atoi(attendedStr)
 
 			// Пытаемся найти существующую запись
 			var data models.StudentDisciplineData
@@ -496,4 +507,5 @@ func ResetDynamicHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+	
 }
